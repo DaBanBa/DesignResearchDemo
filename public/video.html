@@ -37,7 +37,7 @@
     #bar-left  { left: 0; }
     #bar-right { right: 0; }
 
-    /* Room layers — centered, stacked, not movable */
+    /* Room layers */
     #room-layers {
       position: fixed;
       left: 50%;
@@ -60,7 +60,6 @@
       object-fit: contain;
       display: block;
     }
-    /* Stickers layer — appear/disappear based on choices */
     #stickers-layer {
       position: fixed;
       top: 0; left: 0;
@@ -171,12 +170,10 @@
       const nh = overlayImg.naturalHeight;
       if (!nw || !nh) return;
 
-      // Width the image actually renders at when object-fit:contain
       const renderedW = (nw / nh) > (vw / vh)
-        ? vw                      // constrained by width
-        : vh * (nw / nh);         // constrained by height
+        ? vw
+        : vh * (nw / nh);
 
-      // Add 1px overlap to prevent subpixel gap lines
       const barW = Math.max(0, Math.ceil((vw - renderedW) / 2) + 1);
       barLeft.style.width  = barW + 'px';
       barRight.style.width = barW + 'px';
@@ -186,11 +183,9 @@
     window.addEventListener('resize', updateBars);
     if (overlayImg.complete) updateBars();
 
-    // ---- DRAG ----
     function makeDraggable(el) {
       let dragging = false, ox = 0, oy = 0, cx = 0, cy = 0;
 
-      // Resolve initial CSS transform to pixel offset from container origin
       function initPos() {
         if (el.dataset.initDone) return;
         el.dataset.initDone = '1';
@@ -198,7 +193,6 @@
         const pRect = el.parentElement.getBoundingClientRect();
         cx = rect.left - pRect.left;
         cy = rect.top  - pRect.top;
-        // Preserve rotation from the CSS transform
         const m = new DOMMatrix(getComputedStyle(el).transform);
         const angle = Math.atan2(m.b, m.a) * 180 / Math.PI;
         el.style.transform = `rotate(${Math.round(angle)}deg)`;
@@ -228,12 +222,9 @@
       });
     }
 
-    // Room rotation map: each room number keeps its original star-pattern rotation
     const ROOM_ROTATION = { 1: 0, 2: -72, 3: -144, 4: 144, 5: 72, 6: 180, 7: 180, 8: 180 };
 
-    const roomLayersEl    = document.getElementById('room-layers');
-    // Stickers: 8 persistent draggable elements at full star-pattern positions
-    // Point-down pentagon (r=28vmin) for 1-5, then 6-8 stack at bottom (rot 180°)
+    const roomLayersEl = document.getElementById('room-layers');
     const STICKER_INIT = [
       { left: '2rem', top: 'calc(12.5% * 0.5)' },
       { left: '2rem', top: 'calc(12.5% * 1.5)' },
@@ -255,7 +246,6 @@
     function updateRoomLayers(choices) {
       const current = roomLayersEl.children.length;
       const wanted = (choices || []).filter(ch => ch.room).length;
-      // Only add new layers, never rebuild existing ones (avoids flash)
       if (wanted === 0 && current > 0) {
         roomLayersEl.innerHTML = '';
         return;
@@ -279,11 +269,9 @@
     }
 
     function updateStickers(s) {
-      // Slot index = room - 1  (room 1 → slot 0, room 8 → slot 7)
       if (s.phase === 'waiting' || s.phase === 'done') {
         stickerEls.forEach(el => el.classList.remove('hidden'));
       } else if (s.phase === 'choosing') {
-        // Light up room slot for each non-skip option
         const roomSlots = new Map(
           (s.options || [])
             .filter(o => o.room !== 0)
@@ -298,7 +286,6 @@
           }
         });
       } else if (s.phase === 'acting') {
-        // Show only the room sticker for the last picked choice
         const last = (s.choices || []).slice(-1)[0];
         const slot = (last && last.room !== 0) ? last.room - 1 : -1;
         stickerEls.forEach((el, i) => {

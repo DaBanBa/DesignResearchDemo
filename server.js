@@ -41,15 +41,13 @@ function minToTime(mins) {
   return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-// ---- SCHEDULE ----
 const schedule = JSON.parse(fs.readFileSync(path.join(__dirname, 'schedule.json'), 'utf8'));
 const stageTimes = schedule.map(s => timeToMin(s.time));
 
-const TICK_MS = 150; // real ms per game-minute
+const TICK_MS = 150;
 
-// ---- STATE ----
 const state = {
-  phase: 'waiting',   // waiting | choosing | acting | done
+  phase: 'waiting',
   stage: 0,
   time: schedule[0].time,
   timeMin: timeToMin(schedule[0].time),
@@ -218,7 +216,6 @@ server.on('error', (err) => {
 
 server.listen(PORT, () => {
   console.log(`Server running at https://localhost:${PORT}`);
-  console.log(`  Video: https://localhost:${PORT}/video.html`);
 });
 
 
