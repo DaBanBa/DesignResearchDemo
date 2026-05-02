@@ -46,6 +46,7 @@
       height: 0;
       z-index: 5;
       pointer-events: none;
+      mix-blend-mode: screen;
     }
     .room-layer {
       position: absolute;
@@ -128,13 +129,30 @@
     #btn-b { background: #d4b800 !important; border-color: #d4b800 !important; color: #000 !important; }
     #btn-b:hover { background: #b89e00 !important; }
     .hidden { display: none !important; }
+    #mood-reflector {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 160px;
+      height: 160px;
+      z-index: 20;
+      pointer-events: none;
+    }
+    #mood-reflector img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: opacity 0.4s ease;
+    }
   </style>
 </head>
 <body>
-  <img id="overlay" src="image.png" alt="">
+  <img id="overlay" src="cutout.png" alt="">
   <div id="bar-left"  class="side-bar"></div>
   <div id="bar-right" class="side-bar"></div>
   <div id="room-layers"></div>
+  <div id="mood-reflector"><img id="mood-face" src="moodface/Neutral face.png" alt=""></div>
   <div id="stickers-layer">
     <div class="sticker-item"><img src="img/null.png" alt=""></div>
     <div class="sticker-item"><img src="img/null.png" alt=""></div>
@@ -257,7 +275,7 @@
         div.className = 'room-layer';
         div.style.transform = `rotate(${rot}deg)`;
         const vid = document.createElement('video');
-        vid.src = 'vids/50.mp4';
+        vid.src = 'vids/greenpink.mp4';
         vid.autoplay = true;
         vid.loop = true;
         vid.muted = true;
@@ -266,6 +284,11 @@
         roomLayersEl.appendChild(div);
         vid.play().catch(() => {});
       });
+    }
+
+    function updateRoomSaturation(hp) {
+      const sat = (hp ?? 70) / 50;
+      roomLayersEl.style.filter = `saturate(${sat})`;
     }
 
     function updateStickers(s) {
@@ -297,6 +320,38 @@
           }
         });
       }
+    }
+
+    const moodFaceEl = document.getElementById('mood-face');
+
+    const ACTION_FACE = {
+      'Brush teeth':   'actionface/brushing tooth.gif',
+      'Eat breakfast': 'actionface/eating breakfast.gif',
+      'Workout':       'actionface/exercise.gif',
+      'Drink water':   'actionface/drinking water.gif',
+      'Smoke break':   'actionface/smoking.gif',
+      'Salad':         'actionface/eating salad.gif',
+      'Fast food':     'actionface/eating fastfood.gif',
+      'Stretch break': 'actionface/stretching.gif',
+      'Snack':         'actionface/eating snakcs.gif',
+      'Home cooking':  'actionface/eating home cooked meal.gif',
+      'Drinking':      'actionface/drinking beer.gif',
+      'Flossing':      'actionface/flossing.gif',
+    };
+
+    function updateMoodFace(s) {
+      let next;
+      if (s.phase === 'acting') {
+        const last = (s.choices || []).slice(-1)[0];
+        next = (last && ACTION_FACE[last.action]) || null;
+      }
+      if (!next) {
+        const mood = s.mood ?? 50;
+        if (mood >= 66)      next = 'moodface/Happy Face.png';
+        else if (mood >= 33) next = 'moodface/Neutral face.png';
+        else                 next = 'moodface/Sad Face.png';
+      }
+      if (moodFaceEl.getAttribute('src') !== next) moodFaceEl.src = next;
     }
 
     const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -361,7 +416,9 @@
       if (msg.type !== 'state') return;
       const s = msg.state;
       setChoiceUI(s);
+      updateMoodFace(s);
       updateRoomLayers(s.choices || []);
+      updateRoomSaturation(s.hp);
       updateStickers(s);
     });
   </script>

@@ -3,8 +3,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { WebSocketServer } = require('ws');
-const https = require('https');
-
+const http = require('http');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -13,10 +12,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'video.html'));
 });
 
-const server = https.createServer({
-  key:  fs.readFileSync(process.env.SSL_KEY_PATH),
-  cert: fs.readFileSync(process.env.SSL_CERT_PATH),
-}, app);
+const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 function broadcast(data) {
@@ -54,6 +50,8 @@ const state = {
   prompt: '',
   options: [],
   choices: [],
+  hp: 70,
+  mood: 50,
 };
 
 let clockTimer = null;
@@ -119,6 +117,9 @@ function pickOption(label) {
     sticker: opt.sticker,
   });
 
+  state.hp   = Math.min(100, Math.max(0, state.hp   + (opt.hp   ?? 0)));
+  state.mood = Math.min(100, Math.max(0, state.mood + (opt.mood ?? 0)));
+
   state.stage++;
   state.options = [];
   state.prompt = '';
@@ -136,6 +137,8 @@ function resetGame() {
   state.prompt = '';
   state.options = [];
   state.choices = [];
+  state.hp = 70;
+  state.mood = 50;
   broadcastState();
 }
 
@@ -215,7 +218,7 @@ server.on('error', (err) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Server running at https://localhost:${PORT}`);
+  console.log(`Server running at http://192.168.1.168:${PORT}`);
 });
 
 
